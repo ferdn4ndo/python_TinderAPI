@@ -1,10 +1,11 @@
+import datetime
+
+import dateutil.parser
+
 from tinder_api import session
 from tinder_api.utils import request_handlers as r
 from tinder_api.utils.wrapper import JsonWrapper
 
-import json
-import datetime
-import dateutil.parser
 
 class UserModel():
     def __init__(self, uid, name, bio, age, birth_date, photos,
@@ -37,6 +38,7 @@ class UserModel():
                 {"cause": cause, "text": text})
         return resp
 
+
 class NormalUser(UserModel):
     def __init__(self, uid, name, bio, age, birth_date, photos, gender,
                 distance, job_name, job_title, school_name, school_id,
@@ -59,6 +61,19 @@ class NormalUser(UserModel):
         """Dislikes (swipes left) the user"""
         resp = r.post('/pass/{}'.format(self.id))
         return 'passed'
+
+
+class SelfUser(UserModel):
+    def __init__(self, uid, name, bio, age, birth_date, photos, gender,
+                 distance, job_name, job_title, school_name, school_id,
+                 ping_time, top_song, instagram_photos):
+        super().__init__(uid, name, bio, age, birth_date, photos, gender,
+                         distance, job_name, job_title, school_name, school_id,
+                         ping_time, top_song, instagram_photos)
+
+    def set_location(self, latlon) -> bool:
+        resp = r.post('/passport/user/travel?locale=pt-BR', {"lat": latlon[0], "lon": latlon[1]})
+        return True if resp["status"] == 200 else False
 
 
 class MatchUser(UserModel):
@@ -85,6 +100,7 @@ class MatchUser(UserModel):
     def get_messages(self):
         """Constructs a Message() object for each message"""
         return [Message(x, self.id, self.name) for x in self.match_data['messages']]
+
 
 class Message():
     def __init__(self, data, uid, name):
@@ -133,7 +149,6 @@ class Message():
         return repr(self.body)
 
 
-
 class UserController:
     def __init__(self, uid):
         self.id = uid
@@ -174,7 +189,7 @@ class UserController:
         gender = self._decode_gender()
         distance = self._decode_distance()
         job_name = self.const.jobs[0].company.name
-        job_title =  self.const.jobs[0].title.name
+        job_title = self.const.jobs[0].title.name
         school_name = self.const.schools[0].name
         school_id = self.const.schools[0].id
         ping_time = self.const.ping_time
@@ -189,7 +204,7 @@ class UserController:
                     distance, job_name, job_title, school_name, school_id,
                     ping_time, top_song, instagram_photos)
         elif self.user_type is 'Me':
-            return UserModel(self.id, name, bio, age, birth_date, photos, gender,
+            return SelfUser(self.id, name, bio, age, birth_date, photos, gender,
                     distance, job_name, job_title, school_name, school_id,
                     ping_time, top_song, instagram_photos)
 
